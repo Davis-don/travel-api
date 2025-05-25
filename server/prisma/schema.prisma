@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Accommodation {
+  id             String           @id @default(uuid())
+  name           String
+  description    String
+  city           String
+  county         String
+  country        String
+  circuit        String
+  class          Int              // Can be 1-5 for star rating
+  password       String           // Hashed password for access (e.g. admin panel or dashboard)
+  serviceLevel   ServiceLevel     @relation(fields: [serviceLevelId], references: [id])
+  serviceLevelId String
+  type           AccommodationType @relation(fields: [typeId], references: [id])
+  typeId         String
+  imgUrl         String           // URL to the image
+  publicId       String           // Cloudinary public ID
+
+  rooms          RoomType[]       @relation("AccommodationRooms")
+  amenities      Amenity[]        @relation("AccommodationAmenities")
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+
+
+model AccommodationType {
+  id    String   @id @default(uuid())
+  name  String   @unique // e.g., Hotel, Hostel, Resort
+  accommodations Accommodation[]
+}
+
+model ServiceLevel {
+  id    String   @id @default(uuid())
+  name  String   @unique // e.g., Full-Service, Limited-Service, Self-Catering
+  accommodations Accommodation[]
+}
+
+model RoomType {
+  id               String          @id @default(uuid())
+  name             String          // e.g., Single Room, Double Room, Suite
+  capacity         Int             // Max occupancy
+  accommodations   Accommodation[] @relation("AccommodationRooms")
+}
+
+model Amenity {
+  id               String          @id @default(uuid())
+  name             String          @unique // e.g., WiFi, Parking, Spa, Pool
+  accommodations   Accommodation[] @relation("AccommodationAmenities")
+}

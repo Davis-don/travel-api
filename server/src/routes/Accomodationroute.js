@@ -1,0 +1,166 @@
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+
+const router = express.Router();
+const client = new PrismaClient();
+const SALT_ROUNDS = 10;
+
+// Add a new accommodation with password confirmation
+router.post('/add-accommodation', async (req, res) => {
+  const {
+    name,
+    description,
+    city,
+    county,
+    country,
+    circuit,
+    class: starClass,
+    serviceLevelId,
+    typeId,
+    imgUrl,
+    publicId,
+    password,
+    confirmPassword,
+    roomTypeIds,
+    amenityIds,
+  } = req.body;
+
+  try {
+    // Validate required fields including passwords
+    if (
+      !name || !description || !city || !county || !country || !circuit ||
+      typeof starClass !== 'number' || !serviceLevelId || !typeId ||
+      !imgUrl || !publicId || !password || !confirmPassword
+    ) {
+      return res.status(400).json({ message: 'Missing or invalid required fields.' });
+    }
+
+    // Password match check
+    if (password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match.' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Create accommodation with connected relations
+    const newAccommodation = await client.accommodation.create({
+      data: {
+        name,
+        description,
+        city,
+        county,
+        country,
+        circuit,
+        class: starClass,
+        imgUrl,
+        publicId,
+        password: hashedPassword,
+        serviceLevel: { connect: { id: serviceLevelId } },
+        type: { connect: { id: typeId } },
+        rooms: roomTypeIds
+          ? { connect: roomTypeIds.map(id => ({ id })) }
+          : undefined,
+        amenities: amenityIds
+          ? { connect: amenityIds.map(id => ({ id })) }
+          : undefined,
+      },
+      include: {
+        serviceLevel: true,
+        type: true,
+        rooms: true,
+        amenities: true,
+      },
+    });
+
+    res.status(201).json({
+      message: 'Accommodation added successfully!',
+      accommodation: newAccommodation,
+    });
+  } catch (error) {
+    console.error('Error adding accommodation:', error);
+    res.status(500).json({ message: 'An error occurred while adding the accommodation.' });
+  }
+});
+
+// Fetch accommodation by ID
+router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const accommodation = await client.accommodation.findUnique({
+      where: { id },
+      include: {
+        serviceLevel: true,
+        type: true,
+        rooms: true,
+        amenities: true,
+      },
+    });
+
+    if (!accommodation) {
+      return res.status(404).json({ message: `Accommodation with id ${id} not found.` });
+    }
+
+    res.status(200).json(accommodation);
+  } catch (error) {
+    console.error('Error fetching accommodation:', error);
+    res.status(500).json({ message: 'An error occurred while fetching the accommodation.' });
+  }
+});
+
+// Fetch all accommodations
+router.get('/fetch-all-accommodations', async (req, res) => {
+  try {
+    const accommodations = await client.accommodation.findMany({
+      include: {
+        serviceLevel: true,
+        type: true,
+        rooms: true,
+        amenities: true,
+      },
+    });
+
+    res.status(200).json(accommodations);
+  } catch (error) {
+    console.error('Error fetching accommodations:', error);
+    res.status(500).json({ message: 'An error occurred while fetching accommodations.' });
+  }
+});
+
+// Delete accommodation by ID
+router.delete('/delete-accommodation-by-id', async (req, res) => {
+  const { id } = req.query;
+
+  if (!id) {
+    return res.status(400).json({ message: 'ID is required' });
+  }
+
+  try {
+    const deleted = await client.accommodation.delete({ where: { id: String(id) } });
+    res.json({
+      message: `Accommodation with id ${id} successfully deleted.`,
+      accommodation: deleted,
+    });
+  } catch (error) {
+    console.error('Error deleting accommodation:', error);
+    res.status(500).json({ message: `Failed to delete accommodation: ${error.message}` });
+  }
+});
+
+// Delete all accommodations
+router.delete('/delete-all-accommodations', async (req, res) => {
+  try {
+    const deleted = await client.accommodation.deleteMany();
+    res.json({
+      message: `Deleted ${deleted.count} accommodation(s) successfully.`,
+      count: deleted.count,
+    });
+  } catch (error) {
+    console.error('Error deleting all accommodations:', error);
+    res.status(500).json({ message: `Failed to delete all accommodations: ${error.message}` });
+  }
+});
+
+export default router;
