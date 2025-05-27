@@ -1,12 +1,10 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
 
 const router = express.Router();
 const client = new PrismaClient();
-const SALT_ROUNDS = 10;
 
-// Add a new accommodation with password confirmation
+// Add a new accommodation
 router.post('/add-accommodation', async (req, res) => {
   const {
     name,
@@ -20,31 +18,21 @@ router.post('/add-accommodation', async (req, res) => {
     typeId,
     imgUrl,
     publicId,
-    password,
-    confirmPassword,
-    roomTypeIds,
-    amenityIds,
+    roomTypeIds = [],
+    amenityIds = [],
   } = req.body;
 
   try {
-    // Validate required fields including passwords
+    // Validate required fields
     if (
       !name || !description || !city || !county || !country || !circuit ||
       typeof starClass !== 'number' || !serviceLevelId || !typeId ||
-      !imgUrl || !publicId || !password || !confirmPassword
+      !imgUrl || !publicId
     ) {
       return res.status(400).json({ message: 'Missing or invalid required fields.' });
     }
 
-    // Password match check
-    if (password !== confirmPassword) {
-      return res.status(400).json({ message: 'Passwords do not match.' });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-
-    // Create accommodation with connected relations
+    // Create the accommodation
     const newAccommodation = await client.accommodation.create({
       data: {
         name,
@@ -56,27 +44,55 @@ router.post('/add-accommodation', async (req, res) => {
         class: starClass,
         imgUrl,
         publicId,
-        password: hashedPassword,
         serviceLevel: { connect: { id: serviceLevelId } },
         type: { connect: { id: typeId } },
-        rooms: roomTypeIds
-          ? { connect: roomTypeIds.map(id => ({ id })) }
-          : undefined,
-        amenities: amenityIds
-          ? { connect: amenityIds.map(id => ({ id })) }
-          : undefined,
       },
+    });
+
+    // Add related room types
+    if (roomTypeIds.length) {
+      await client.accommodationRoom.createMany({
+        data: roomTypeIds.map((roomTypeId) => ({
+          accommodationId: newAccommodation.id,
+          roomTypeId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    // Add related amenities
+    if (amenityIds.length) {
+      await client.accommodationAmenity.createMany({
+        data: amenityIds.map((amenityId) => ({
+          accommodationId: newAccommodation.id,
+          amenityId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    // Fetch accommodation with relations
+    const fullAccommodation = await client.accommodation.findUnique({
+      where: { id: newAccommodation.id },
       include: {
         serviceLevel: true,
         type: true,
-        rooms: true,
-        amenities: true,
+        accommodationRooms: {
+          include: {
+            roomType: true,
+          },
+        },
+        accommodationAmenities: {
+          include: {
+            amenity: true,
+          },
+        },
       },
     });
 
     res.status(201).json({
       message: 'Accommodation added successfully!',
-      accommodation: newAccommodation,
+      accommodation: fullAccommodation,
     });
   } catch (error) {
     console.error('Error adding accommodation:', error);
@@ -94,8 +110,16 @@ router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
       include: {
         serviceLevel: true,
         type: true,
-        rooms: true,
-        amenities: true,
+        accommodationRooms: {
+          include: {
+            roomType: true,
+          },
+        },
+        accommodationAmenities: {
+          include: {
+            amenity: true,
+          },
+        },
       },
     });
 
@@ -117,8 +141,16 @@ router.get('/fetch-all-accommodations', async (req, res) => {
       include: {
         serviceLevel: true,
         type: true,
-        rooms: true,
-        amenities: true,
+        accommodationRooms: {
+          include: {
+            roomType: true,
+          },
+        },
+        accommodationAmenities: {
+          include: {
+            amenity: true,
+          },
+        },
       },
     });
 
