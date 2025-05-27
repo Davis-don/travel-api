@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider      = "prisma-client-js"
   output        = "../node_modules/.prisma/client"
@@ -15,7 +12,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model Accommodation {
   id             String           @id @default(uuid())
   name           String
@@ -25,22 +21,19 @@ model Accommodation {
   country        String
   circuit        String
   class          Int              // Can be 1-5 for star rating
-  password       String           // Hashed password for access (e.g. admin panel or dashboard)
-  serviceLevel   ServiceLevel     @relation(fields: [serviceLevelId], references: [id])
+  serviceLevel   ServiceLevel     @relation(fields: [serviceLevelId], references: [id], onDelete: Cascade)
   serviceLevelId String
-  type           AccommodationType @relation(fields: [typeId], references: [id])
+  type           AccommodationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
   typeId         String
   imgUrl         String           // URL to the image
   publicId       String           // Cloudinary public ID
 
-  rooms          RoomType[]       @relation("AccommodationRooms")
-  amenities      Amenity[]        @relation("AccommodationAmenities")
+  accommodationRooms    AccommodationRoom[]
+  accommodationAmenities AccommodationAmenity[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 }
-
-
 
 model AccommodationType {
   id    String   @id @default(uuid())
@@ -58,11 +51,31 @@ model RoomType {
   id               String          @id @default(uuid())
   name             String          // e.g., Single Room, Double Room, Suite
   capacity         Int             // Max occupancy
-  accommodations   Accommodation[] @relation("AccommodationRooms")
+  accommodationRooms AccommodationRoom[]
 }
 
 model Amenity {
   id               String          @id @default(uuid())
   name             String          @unique // e.g., WiFi, Parking, Spa, Pool
-  accommodations   Accommodation[] @relation("AccommodationAmenities")
+  accommodationAmenities AccommodationAmenity[]
+}
+
+// Explicit join table for Accommodation-RoomType relationship
+model AccommodationRoom {
+  accommodation   Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  accommodationId String
+  roomType       RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  roomTypeId     String
+
+  @@id([accommodationId, roomTypeId])
+}
+
+// Explicit join table for Accommodation-Amenity relationship
+model AccommodationAmenity {
+  accommodation   Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  accommodationId String
+  amenity        Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  amenityId      String
+
+  @@id([accommodationId, amenityId])
 }
