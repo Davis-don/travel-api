@@ -157,7 +157,7 @@ router.get('/fetch-all-accommodations', async (req, res) => {
     res.status(200).json(accommodations);
   } catch (error) {
     console.error('Error fetching accommodations:', error);
-    res.status(500).json({ message: 'An error occurred while fetching accommodations.' });
+    res.status(500).json({ message: e.message });
   }
 });
 
