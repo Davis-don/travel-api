@@ -137,24 +137,25 @@ router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
 // Fetch all accommodations
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-    const accommodations = await client.accommodation.findMany({
-      include: {
-        serviceLevel: true,
-        type: true,
-        accommodationRooms: {
-          include: {
-            roomType: true,
-          },
-        },
-        accommodationAmenities: {
-          include: {
-            amenity: true,
-          },
-        },
-      },
-    });
+     res.send("accomodation running")
+    // const accommodations = await client.accommodation.findMany({
+    //   include: {
+    //     serviceLevel: true,
+    //     type: true,
+    //     accommodationRooms: {
+    //       include: {
+    //         roomType: true,
+    //       },
+    //     },
+    //     accommodationAmenities: {
+    //       include: {
+    //         amenity: true,
+    //       },
+    //     },
+    //   },
+    // });
 
-    res.status(200).json(accommodations);
+    // res.status(200).json(accommodations);
   } catch (error) {
     console.error('Error fetching accommodations:', error);
     res.status(500).json({ message: e.message });
