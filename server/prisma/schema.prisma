@@ -1,5 +1,5 @@
 // This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Learn more at: https://pris.ly/d/prisma-schema
 
 generator client {
   provider      = "prisma-client-js"
@@ -23,13 +23,13 @@ model Accommodation {
   class          Int              // Can be 1-5 for star rating
   serviceLevel   ServiceLevel     @relation(fields: [serviceLevelId], references: [id], onDelete: Cascade)
   serviceLevelId String
-  type           AccommodationType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  type           AccommodationType @relation(fields: [typeId], references: [id], onDelete: Cascade) // One-to-one relation
   typeId         String
   imgUrl         String           // URL to the image
   publicId       String           // Cloudinary public ID
 
-  accommodationRooms    AccommodationRoom[]
-  accommodationAmenities AccommodationAmenity[]
+  rooms    AccommodationRoom[]
+  amenities AccommodationAmenity[]
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -38,7 +38,7 @@ model Accommodation {
 model AccommodationType {
   id    String   @id @default(uuid())
   name  String   @unique // e.g., Hotel, Hostel, Resort
-  accommodations Accommodation[]
+  accommodations Accommodation[] // Corrected for one-to-one relation via typeId in Accommodation
 }
 
 model ServiceLevel {
@@ -48,16 +48,16 @@ model ServiceLevel {
 }
 
 model RoomType {
-  id               String          @id @default(uuid())
-  name             String          // e.g., Single Room, Double Room, Suite
-  capacity         Int             // Max occupancy
-  accommodationRooms AccommodationRoom[]
+  id           String          @id @default(uuid())
+  name         String          // e.g., Single Room, Double Room, Suite
+  capacity     Int             // Max occupancy
+  rooms        AccommodationRoom[]
 }
 
 model Amenity {
-  id               String          @id @default(uuid())
-  name             String          @unique // e.g., WiFi, Parking, Spa, Pool
-  accommodationAmenities AccommodationAmenity[]
+  id         String          @id @default(uuid())
+  name       String          @unique // e.g., WiFi, Parking, Spa, Pool
+  amenities  AccommodationAmenity[]
 }
 
 // Explicit join table for Accommodation-RoomType relationship

@@ -71,29 +71,18 @@ router.post('/add-accommodation', async (req, res) => {
       });
     }
 
-    // Fetch accommodation with relations
+    // Fetch accommodation with corrected relations
     const fullAccommodation = await client.accommodation.findUnique({
       where: { id: newAccommodation.id },
       include: {
         serviceLevel: true,
         type: true,
-        accommodationRooms: {
-          include: {
-            roomType: true,
-          },
-        },
-        accommodationAmenities: {
-          include: {
-            amenity: true,
-          },
-        },
+        rooms: { include: { roomType: true } },
+        amenities: { include: { amenity: true } },
       },
     });
 
-    res.status(201).json({
-      message: 'Accommodation added successfully!',
-      accommodation: fullAccommodation,
-    });
+    res.status(201).json({ message: 'Accommodation added successfully!', accommodation: fullAccommodation });
   } catch (error) {
     console.error('Error adding accommodation:', error);
     res.status(500).json({ message: 'An error occurred while adding the accommodation.' });
@@ -110,16 +99,8 @@ router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
       include: {
         serviceLevel: true,
         type: true,
-        accommodationRooms: {
-          include: {
-            roomType: true,
-          },
-        },
-        accommodationAmenities: {
-          include: {
-            amenity: true,
-          },
-        },
+        rooms: { include: { roomType: true } },
+        amenities: { include: { amenity: true } },
       },
     });
 
@@ -137,28 +118,19 @@ router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
 // Fetch all accommodations
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-     
     const accommodations = await client.accommodation.findMany({
       include: {
         serviceLevel: true,
         type: true,
-        accommodationRooms: {
-          include: {
-            roomType: true,
-          },
-        },
-        accommodationAmenities: {
-          include: {
-            amenity: true,
-          },
-        },
+        rooms: { include: { roomType: true } },
+        amenities: { include: { amenity: true } },
       },
     });
 
     res.status(200).json(accommodations);
   } catch (error) {
     console.error('Error fetching accommodations:', error);
-    res.status(500).json({ message: e.message });
+    res.status(500).json({ message: 'An error occurred while fetching accommodations.' });
   }
 });
 
@@ -197,3 +169,4 @@ router.delete('/delete-all-accommodations', async (req, res) => {
 });
 
 export default router;
+
