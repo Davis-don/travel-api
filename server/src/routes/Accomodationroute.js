@@ -19,8 +19,8 @@ router.post('/add-accommodation', async (req, res) => {
     typeId,
     imgUrl,
     publicId,
-    roomTypeIds = [],
-    amenityIds = [],
+    rooms = [],      // expect array of { roomTypeId }
+    amenities = [],  // expect array of { amenityId }
   } = req.body;
 
   try {
@@ -33,7 +33,11 @@ router.post('/add-accommodation', async (req, res) => {
       return res.status(400).json({ message: 'Missing or invalid required fields.' });
     }
 
-//     // Create the accommodation
+    // Extract arrays of IDs from nested objects
+    const roomTypeIds = rooms.map(r => r.roomTypeId);
+    const amenityIds = amenities.map(a => a.amenityId);
+
+    // Create the accommodation
     const newAccommodation = await client.accommodation.create({
       data: {
         name,
@@ -61,7 +65,7 @@ router.post('/add-accommodation', async (req, res) => {
       });
     }
 
-//     // Add related amenities
+    // Add related amenities
     if (amenityIds.length) {
       await client.accommodationAmenity.createMany({
         data: amenityIds.map((amenityId) => ({
@@ -72,7 +76,7 @@ router.post('/add-accommodation', async (req, res) => {
       });
     }
 
-     // Fetch accommodation with corrected relations
+    // Fetch accommodation with relations
     const fullAccommodation = await client.accommodation.findUnique({
       where: { id: newAccommodation.id },
       include: {
@@ -89,6 +93,7 @@ router.post('/add-accommodation', async (req, res) => {
     res.status(500).json({ message: 'An error occurred while adding the accommodation.' });
   }
 });
+
 
  // Fetch accommodation by ID
 router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
