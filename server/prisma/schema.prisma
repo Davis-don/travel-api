@@ -1,81 +1,94 @@
-// This is your Prisma schema file,
+// Prisma Schema
 // Learn more at: https://pris.ly/d/prisma-schema
 
+// --- GENERATORS ---
 generator client {
   provider      = "prisma-client-js"
   output        = "../node_modules/.prisma/client"
   binaryTargets = ["native", "windows"]
 }
 
+// --- DATASOURCE ---
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// --- MODELS ---
+
+// Main accommodation model
 model Accommodation {
-  id             String           @id @default(uuid())
+  id             String               @id @default(uuid())
   name           String
   description    String
   city           String
   county         String
   country        String
   circuit        String
-  class          Int              // Can be 1-5 for star rating
-  serviceLevel   ServiceLevel     @relation(fields: [serviceLevelId], references: [id], onDelete: Cascade)
+  class          Int                  // Star rating (1-5)
+  imgUrl         String               // URL to the image
+  publicId       String               // Cloudinary public ID
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  // Relations
+  serviceLevel   ServiceLevel         @relation(fields: [serviceLevelId], references: [id], onDelete: Cascade)
   serviceLevelId String
-  type           AccommodationType @relation(fields: [typeId], references: [id], onDelete: Cascade) // One-to-one relation
+  
+  type           AccommodationType    @relation(fields: [typeId], references: [id], onDelete: Cascade)
   typeId         String
-  imgUrl         String           // URL to the image
-  publicId       String           // Cloudinary public ID
 
-  rooms    AccommodationRoom[]
-  amenities AccommodationAmenity[]
-
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  rooms          AccommodationRoom[]
+  amenities      AccommodationAmenity[]
 }
 
+// Accommodation classification types
 model AccommodationType {
-  id    String   @id @default(uuid())
-  name  String   @unique // e.g., Hotel, Hostel, Resort
-  accommodations Accommodation[] // Corrected for one-to-one relation via typeId in Accommodation
-}
-
-model ServiceLevel {
-  id    String   @id @default(uuid())
-  name  String   @unique // e.g., Full-Service, Limited-Service, Self-Catering
+  id             String         @id @default(uuid())
+  name           String         @unique  // e.g., Hotel, Hostel, Resort
   accommodations Accommodation[]
 }
 
+// Service level classification
+model ServiceLevel {
+  id             String         @id @default(uuid())
+  name           String         @unique  // e.g., Full-Service, Limited-Service
+  accommodations Accommodation[]
+}
+
+// Room types definition
 model RoomType {
-  id           String          @id @default(uuid())
-  name         String          // e.g., Single Room, Double Room, Suite
-  capacity     Int             // Max occupancy
-  rooms        AccommodationRoom[]
+  id             String              @id @default(uuid())
+  name           String              // e.g., Single Room, Double Room
+  capacity       Int                 // Max occupancy
+  rooms          AccommodationRoom[]
 }
 
+// Amenities definition
 model Amenity {
-  id         String          @id @default(uuid())
-  name       String          @unique // e.g., WiFi, Parking, Spa, Pool
-  amenities  AccommodationAmenity[]
+  id             String              @id @default(uuid())
+  name           String              @unique  // e.g., WiFi, Parking
+  amenities      AccommodationAmenity[]
 }
 
-// Explicit join table for Accommodation-RoomType relationship
+// Join table: Accommodation ↔ RoomType (Many-to-Many)
 model AccommodationRoom {
-  accommodation   Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
-  accommodationId String
-  roomType       RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
-  roomTypeId     String
+  id              String         @id @default(uuid())
+  accommodation    Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  accommodationId  String
+  roomType         RoomType      @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  roomTypeId       String
 
-  @@id([accommodationId, roomTypeId])
+  @@unique([accommodationId, roomTypeId])
 }
 
-// Explicit join table for Accommodation-Amenity relationship
+// Join table: Accommodation ↔ Amenity (Many-to-Many)
 model AccommodationAmenity {
-  accommodation   Accommodation @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
+  id              String         @id @default(cuid())
+  accommodation   Accommodation  @relation(fields: [accommodationId], references: [id], onDelete: Cascade)
   accommodationId String
-  amenity        Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
-  amenityId      String
+  amenity         Amenity        @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  amenityId       String
 
-  @@id([accommodationId, amenityId])
+  @@unique([accommodationId, amenityId])
 }
