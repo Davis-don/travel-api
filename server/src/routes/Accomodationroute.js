@@ -117,16 +117,37 @@ const client = new PrismaClient();
 // });
 
 // Fetch all accommodations
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-    const data = await getData();
-    if (!data) return res.status(200).json({});
+    const data = await prisma.accommodation.findMany({
+      include: {
+        serviceLevel: true,  // Include ServiceLevel relation
+        type: true,          // Include AccommodationType relation
+        rooms: {
+          include: {
+            roomType: true   // Include RoomType for each room
+          }
+        },
+        amenities: {
+          include: {
+            amenity: true    // Include Amenity for each accommodation amenity
+          }
+        }
+      }
+    });
+
+    if (!data || data.length === 0) return res.status(200).json([]);
     res.status(200).json(data);
+
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 });
+
 
 
 // // Delete accommodation by ID
