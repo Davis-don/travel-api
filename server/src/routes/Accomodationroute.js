@@ -119,33 +119,35 @@ const client = new PrismaClient();
 // Fetch all accommodations
 
 
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-    const data = await client.accommodation.findMany({
+    const data = await prisma.accommodation.findMany({
       include: {
-        serviceLevel: true,  // Include ServiceLevel relation
-        type: true,          // Include AccommodationType relation
+        serviceLevel: true,
+        type: true,
         rooms: {
           include: {
-            roomType: true   // Include RoomType for each room
+            roomType: true // This is valid inside AccommodationRoom
           }
         },
         amenities: {
           include: {
-            amenity: true    // Include Amenity for each accommodation amenity
+            amenity: true // This is valid inside AccommodationAmenity
           }
         }
       }
     });
 
-    if (!data || data.length === 0) return res.status(200).json([]);
-    res.status(200).json(data);
-
+    res.status(200).json(data.length ? data : []);
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 });
+
 
 
 
