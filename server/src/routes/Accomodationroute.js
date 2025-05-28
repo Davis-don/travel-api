@@ -117,8 +117,7 @@ const client = new PrismaClient();
 // });
 
 // Fetch all accommodations
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+
 
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
