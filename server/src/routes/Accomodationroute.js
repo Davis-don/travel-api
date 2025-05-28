@@ -119,17 +119,9 @@ const client = new PrismaClient();
 // Fetch all accommodations
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-    res.send("I am fetchimh stuff from accomodation route");
-    // const accommodations = await client.accommodation.findMany({
-    //   include: {
-    //     serviceLevel: true,
-    //     type: true,
-    //     rooms: { include: { roomType: true } },
-    //     amenities: { include: { amenity: true } },
-    //   },
-    // });
-
-    // res.status(200).json(accommodations);
+   const accomodations = await client.accommodation.findMany();
+    res.status(200).json(accomodations);
+   
   } catch (error) {
     console.error('Error fetching accommodations:', error);
     res.status(500).json({ message: e.message});
