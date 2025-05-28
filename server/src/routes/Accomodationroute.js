@@ -121,7 +121,7 @@ const client = new PrismaClient();
 
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-    const data = await prisma.accommodation.findMany({
+    const data = await client.accommodation.findMany({
       include: {
         serviceLevel: true,  // Include ServiceLevel relation
         type: true,          // Include AccommodationType relation
