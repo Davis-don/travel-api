@@ -119,12 +119,9 @@ const client = new PrismaClient();
 // Fetch all accommodations
 
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
-    const data = await prisma.accommodation.findMany({
+    const data = await client.accommodation.findMany({
       include: {
         serviceLevel: true,
         type: true,
