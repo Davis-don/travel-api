@@ -124,7 +124,7 @@ router.get('/fetch-all-accommodations', async (req, res) => {
     res.status(200).json(data);
   } catch (err) {
     console.error('Server error:', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
   }
 });
 
