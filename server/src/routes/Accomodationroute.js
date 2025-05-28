@@ -117,7 +117,7 @@ const client = new PrismaClient();
 // });
 
 // Fetch all accommodations
-app.get('/fetch-all-accommodations', async (req, res) => {
+router.get('/fetch-all-accommodations', async (req, res) => {
   try {
     const data = await getData();
     if (!data) return res.status(200).json({});
