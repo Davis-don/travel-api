@@ -5,7 +5,6 @@ import { deleteCloudinaryImage } from '../controllers/deletefromClaudinary.js';
 const router = express.Router();
 const client = new PrismaClient();
 
-// Add a new accommodation
 router.post('/add-accommodation', async (req, res) => {
   const {
     name,
@@ -19,12 +18,11 @@ router.post('/add-accommodation', async (req, res) => {
     typeId,
     imgUrl,
     publicId,
-    rooms = [],      // expect array of { roomTypeId }
-    amenities = [],  // expect array of { amenityId }
+    rooms = [],      // array of { roomTypeId }
+    amenities = [],  // array of { amenityId }
   } = req.body;
 
   try {
-    // Validate required fields
     if (
       !name || !description || !city || !county || !country || !circuit ||
       typeof starClass !== 'number' || !serviceLevelId || !typeId ||
@@ -32,10 +30,6 @@ router.post('/add-accommodation', async (req, res) => {
     ) {
       return res.status(400).json({ message: 'Missing or invalid required fields.' });
     }
-
-    // Extract arrays of IDs from nested objects
-    const roomTypeIds = rooms.map(r => r.roomTypeId);
-    const amenityIds = amenities.map(a => a.amenityId);
 
     // Create the accommodation
     const newAccommodation = await client.accommodation.create({
@@ -55,9 +49,9 @@ router.post('/add-accommodation', async (req, res) => {
     });
 
     // Add related room types
-    if (roomTypeIds.length) {
+    if (rooms && rooms.length > 0) {
       await client.accommodationRoom.createMany({
-        data: roomTypeIds.map((roomTypeId) => ({
+        data: rooms.map(({ roomTypeId }) => ({
           accommodationId: newAccommodation.id,
           roomTypeId,
         })),
@@ -66,9 +60,9 @@ router.post('/add-accommodation', async (req, res) => {
     }
 
     // Add related amenities
-    if (amenityIds.length) {
+    if (amenities && amenities.length > 0) {
       await client.accommodationAmenity.createMany({
-        data: amenityIds.map((amenityId) => ({
+        data: amenities.map(({ amenityId }) => ({
           accommodationId: newAccommodation.id,
           amenityId,
         })),
@@ -94,8 +88,6 @@ router.post('/add-accommodation', async (req, res) => {
   }
 });
 
-
- // Fetch accommodation by ID
 router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -120,9 +112,6 @@ router.get('/fetch-accommodation-by-id/:id', async (req, res) => {
     res.status(500).json({ message: 'An error occurred while fetching the accommodation.' });
   }
 });
-
-// Fetch all accommodations
-
 
 router.get('/fetch-all-accommodations', async (req, res) => {
   try {
@@ -150,19 +139,14 @@ router.get('/fetch-all-accommodations', async (req, res) => {
   }
 });
 
-
-
-
 router.delete('/delete-accommodation-by-id', async (req, res) => {
   const { id } = req.query;
 
-  // Validate ID presence
   if (!id) {
     return res.status(400).json({ message: 'ID is required' });
   }
 
   try {
-    // Fetch accommodation to get the publicId
     const accommodation = await client.accommodation.findUnique({
       where: { id: String(id) },
       select: { publicId: true }
@@ -172,18 +156,16 @@ router.delete('/delete-accommodation-by-id', async (req, res) => {
       return res.status(404).json({ message: `Accommodation with id ${id} not found.` });
     }
 
-    //Log the public ID
     console.log(`Public ID for accommodation ${id}: ${accommodation.publicId}`);
-    const deleteClaudinaryNow=await deleteCloudinaryImage(accommodation.publicId);
+    const deleteClaudinaryNow = await deleteCloudinaryImage(accommodation.publicId);
     if (!deleteClaudinaryNow) {
       return res.status(500).json({ message: 'Failed to delete image from Cloudinary.' });
     }
 
-    // Delete accommodation from database
     const deleted = await client.accommodation.delete({ where: { id: String(id) } });
 
     res.json({
-      message: `Accommodation  successfully deleted.`,
+      message: `Accommodation successfully deleted.`,
       accommodation: deleted,
     });
   } catch (error) {
@@ -192,8 +174,6 @@ router.delete('/delete-accommodation-by-id', async (req, res) => {
   }
 });
 
-
- // Delete all accommodations
 router.delete('/delete-all-accommodations', async (req, res) => {
   try {
     const deleted = await client.accommodation.deleteMany();
