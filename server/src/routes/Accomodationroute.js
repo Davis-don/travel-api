@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import e from 'express';
+import { deleteCloudinaryImage } from '../controllers/deletefromClaudinary.js';
 
 const router = express.Router();
 const client = new PrismaClient();
@@ -153,25 +153,41 @@ router.get('/fetch-all-accommodations', async (req, res) => {
 
 
 
- // Delete accommodation by ID
 router.delete('/delete-accommodation-by-id', async (req, res) => {
   const { id } = req.query;
 
+  // Validate ID presence
   if (!id) {
     return res.status(400).json({ message: 'ID is required' });
   }
 
   try {
-    const deleted = await client.accommodation.delete({ where: { id: String(id) } });
-    res.json({
-      message: `Accommodation with id ${id} successfully deleted.`,
-      accommodation: deleted,
+    // Fetch accommodation to get the publicId
+    const accommodation = await client.accommodation.findUnique({
+      where: { id: String(id) },
+      select: { publicId: true }
     });
+
+    if (!accommodation) {
+      return res.status(404).json({ message: `Accommodation with id ${id} not found.` });
+    }
+
+    // Log the public ID
+    console.log(`Public ID for accommodation ${id}: ${accommodation.publicId}`);
+
+    // // Delete accommodation from database
+    // const deleted = await client.accommodation.delete({ where: { id: String(id) } });
+
+    // res.json({
+    //   message: `Accommodation with id ${id} successfully deleted.`,
+    //   accommodation: deleted,
+    // });
   } catch (error) {
     console.error('Error deleting accommodation:', error);
     res.status(500).json({ message: `Failed to delete accommodation: ${error.message}` });
   }
 });
+
 
  // Delete all accommodations
 router.delete('/delete-all-accommodations', async (req, res) => {
@@ -188,4 +204,3 @@ router.delete('/delete-all-accommodations', async (req, res) => {
 });
 
 export default router;
-
