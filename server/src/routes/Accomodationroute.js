@@ -172,12 +172,12 @@ router.delete('/delete-accommodation-by-id', async (req, res) => {
       return res.status(404).json({ message: `Accommodation with id ${id} not found.` });
     }
 
-    // Log the public ID
-    // console.log(`Public ID for accommodation ${id}: ${accommodation.publicId}`);
-    // const deleteClaudinaryNow=await deleteCloudinaryImage(accommodation.publicId);
-    // if (!deleteClaudinaryNow) {
-    //   return res.status(500).json({ message: 'Failed to delete image from Cloudinary.' });
-    // }
+    //Log the public ID
+    console.log(`Public ID for accommodation ${id}: ${accommodation.publicId}`);
+    const deleteClaudinaryNow=await deleteCloudinaryImage(accommodation.publicId);
+    if (!deleteClaudinaryNow) {
+      return res.status(500).json({ message: 'Failed to delete image from Cloudinary.' });
+    }
 
     // Delete accommodation from database
     const deleted = await client.accommodation.delete({ where: { id: String(id) } });
