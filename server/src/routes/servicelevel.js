@@ -46,11 +46,22 @@ router.delete('/delete-service-level', async (req, res) => {
   }
 
   try {
-    // Check if there are accommodations linked to this service level
+    // Check if service level exists first
+    const serviceLevel = await client.serviceLevel.findUnique({
+      where: { id: String(id) }
+    });
+
+    if (!serviceLevel) {
+      return res.status(404).json({ message: `Service level with id ${id} does not exist.` });
+    }
+
+    // Check for linked accommodations
     const linkedAccommodations = await client.accommodation.findMany({
       where: { serviceLevelId: String(id) },
       select: { id: true, name: true }
     });
+
+    console.log(`Found ${linkedAccommodations.length} accommodations linked to service level ${id}.`);
 
     if (linkedAccommodations.length > 0) {
       return res.status(400).json({
@@ -73,6 +84,7 @@ router.delete('/delete-service-level', async (req, res) => {
     res.status(500).json({ message: `Failed to delete service level: ${error.message}` });
   }
 });
+
 
 // Delete all service levels
 router.delete('/delete-all-service-levels', async (req, res) => {
