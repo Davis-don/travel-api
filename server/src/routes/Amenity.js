@@ -43,16 +43,60 @@ router.delete('/delete-amenity-by-id', async (req, res) => {
   }
 
   try {
-    const deleted = await client.amenity.delete({ where: { id: String(id) } });
-    res.json({
-      message: `Amenity with id ${id} successfully deleted`,
+    // 1. Check if the amenity exists
+    const amenity = await client.amenity.findUnique({
+      where: { id: String(id) }
+    });
+
+    if (!amenity) {
+      return res.status(404).json({
+        message: `Amenity with id ${id} does not exist.`
+      });
+    }
+
+    // 2. Check if the amenity is linked to any accommodations
+    const linkedAmenities = await client.accommodationAmenity.findMany({
+      where: { amenityId: String(id) },
+      select: {
+        id: true,
+        accommodation: {
+          select: { id: true, name: true }
+        }
+      }
+    });
+
+    if (linkedAmenities.length > 0) {
+      return res.status(400).json({
+        message: `Cannot delete amenity because it is linked to ${linkedAmenities.length} accommodation(s).`,
+        details: {
+          actionRequired: "Please delete or unlink these accommodation associations first.",
+          linkedAccommodations: linkedAmenities.map(link => ({
+            accommodationId: link.accommodation.id,
+            accommodationName: link.accommodation.name
+          }))
+        }
+      });
+    }
+
+    // 3. No links — safe to delete
+    const deleted = await client.amenity.delete({
+      where: { id: String(id) }
+    });
+
+    return res.json({
+      message: `Amenity successfully deleted.`,
       amenity: deleted,
     });
+
   } catch (error) {
     console.error('Error deleting amenity:', error);
-    res.status(500).json({ message: `Failed to delete amenity: ${error.message}` });
+    return res.status(500).json({
+      message: 'Internal server error while deleting amenity',
+      error: error.message
+    });
   }
 });
+
 
 // ✅ Delete all amenities
 router.delete('/delete-all-amenities', async (req, res) => {
