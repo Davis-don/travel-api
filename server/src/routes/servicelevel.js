@@ -37,25 +37,26 @@ router.post('/add-service-level', async (req, res) => {
 });
 
 
-// Delete service level by ID
 router.delete('/delete-service-level', async (req, res) => {
   const { id } = req.query;
-
+  
   if (!id) {
     return res.status(400).json({ message: 'ID is required' });
   }
 
   try {
-    // Check if service level exists first
+    // 1. Check if service level exists
     const serviceLevel = await client.serviceLevel.findUnique({
       where: { id: String(id) }
     });
 
     if (!serviceLevel) {
-      return res.status(404).json({ message: `Service level with id ${id} does not exist.` });
+      return res.status(404).json({ 
+        message: `Service level with id ${id} does not exist.` 
+      });
     }
 
-    // Check for linked accommodations
+    // 2. Check for linked accommodations
     const linkedAccommodations = await client.accommodation.findMany({
       where: { serviceLevelId: String(id) },
       select: { id: true, name: true }
@@ -64,26 +65,34 @@ router.delete('/delete-service-level', async (req, res) => {
     console.log(`Found ${linkedAccommodations.length} accommodations linked to service level ${id}.`);
 
     if (linkedAccommodations.length > 0) {
-      return res.status(400).json({
-        message: `Cannot delete service level with id ${id} because it is linked to ${linkedAccommodations.length} accommodation(s). Please delete them first.`,
-        linkedAccommodations
+      return res.status(400).json({ 
+        message: `Cannot delete service level with id ${id} because it is linked to ${linkedAccommodations.length} accommodation(s).`,
+        details: {
+          actionRequired: "Please delete or unlink these accommodations first.",
+          linkedAccommodations
+        }
       });
     }
 
-    // No accommodations linked, proceed with deletion
+    // 3. If no linked accommodations, proceed with deletion
     const deleted = await client.serviceLevel.delete({
       where: { id: String(id) }
     });
 
-    res.json({
+    return res.json({ 
       message: `Service level with id ${id} successfully deleted`,
       serviceLevel: deleted,
     });
+
   } catch (error) {
     console.error('Error deleting service level:', error);
-    res.status(500).json({ message: `Failed to delete service level: ${error.message}` });
+    return res.status(500).json({ 
+      message: 'Internal server error while deleting service level',
+      error: error.message 
+    });
   }
 });
+
 
 
 // Delete all service levels
