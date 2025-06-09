@@ -1,7 +1,7 @@
 // routes/serviceLevel.js
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { deleteCloudinaryImage } from '../controllers/deletefromClaudinary';
+
 
 const router = express.Router();
 const client = new PrismaClient();
@@ -46,23 +46,20 @@ router.delete('/delete-service-level', async (req, res) => {
   }
 
   try {
-    // Find all accommodations using this service level
-    const accommodations = await client.accommodation.findMany({
+    // Check if there are accommodations linked to this service level
+    const linkedAccommodations = await client.accommodation.findMany({
       where: { serviceLevelId: String(id) },
-      select: { id: true, publicId: true }
+      select: { id: true, name: true }
     });
 
-    // Delete Cloudinary images linked to those accommodations
-    for (const acc of accommodations) {
-      const deletedImage = await deleteCloudinaryImage(acc.publicId);
-      if (!deletedImage) {
-        return res.status(500).json({
-          message: `Failed to delete Cloudinary image for accommodation ID ${acc.id}`
-        });
-      }
+    if (linkedAccommodations.length > 0) {
+      return res.status(400).json({
+        message: `Cannot delete service level with id ${id} because it is linked to ${linkedAccommodations.length} accommodation(s). Please delete them first.`,
+        linkedAccommodations
+      });
     }
 
-    // Delete the service level (cascades to accommodations, rooms, etc.)
+    // No accommodations linked, proceed with deletion
     const deleted = await client.serviceLevel.delete({
       where: { id: String(id) }
     });
@@ -76,10 +73,6 @@ router.delete('/delete-service-level', async (req, res) => {
     res.status(500).json({ message: `Failed to delete service level: ${error.message}` });
   }
 });
-
-
-
-
 
 // Delete all service levels
 router.delete('/delete-all-service-levels', async (req, res) => {
