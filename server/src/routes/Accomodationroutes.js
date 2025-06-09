@@ -35,7 +35,7 @@ router.post('/add-accommodation-type', async (req, res) => {
 });
 
 
-// Delete by ID
+// Delete accommodation type by ID
 router.delete('/delete-accommodation-type', async (req, res) => {
   const { id } = req.query;
 
@@ -44,16 +44,52 @@ router.delete('/delete-accommodation-type', async (req, res) => {
   }
 
   try {
-    const deleted = await client.accommodationType.delete({ where: { id: String(id) } });
-    res.json({
-      message: `Accommodation type with id ${id} successfully deleted`,
+    // 1. Check if the accommodation type exists
+    const accommodationType = await client.accommodationType.findUnique({
+      where: { id: String(id) }
+    });
+
+    if (!accommodationType) {
+      return res.status(404).json({
+        message: `Accommodation type with id ${id} does not exist.`
+      });
+    }
+
+    // 2. Check for linked accommodations
+    const linkedAccommodations = await client.accommodation.findMany({
+      where: { typeId: String(id) },
+      select: { id: true, name: true }
+    });
+
+    if (linkedAccommodations.length > 0) {
+      return res.status(400).json({
+        message: `Cannot delete accommodation type because it is linked to ${linkedAccommodations.length} accommodation(s).`,
+        details: {
+          actionRequired: "Please delete or reassign these accommodations first.",
+          linkedAccommodations
+        }
+      });
+    }
+
+    // 3. No links — safe to delete
+    const deleted = await client.accommodationType.delete({
+      where: { id: String(id) }
+    });
+
+    return res.json({
+      message: `Accommodation type successfully deleted`,
       accommodationType: deleted,
     });
+
   } catch (error) {
     console.error('Error deleting accommodation type:', error);
-    res.status(500).json({ message: `Failed to delete accommodation type: ${error.message}` });
+    return res.status(500).json({
+      message: 'Internal server error while deleting accommodation type',
+      error: error.message
+    });
   }
 });
+
 
 // Delete all
 router.delete('/delete-all-accommodation-types', async (req, res) => {
