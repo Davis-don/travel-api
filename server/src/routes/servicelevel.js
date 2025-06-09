@@ -62,11 +62,10 @@ router.delete('/delete-service-level', async (req, res) => {
       select: { id: true, name: true }
     });
 
-    console.log(`Found ${linkedAccommodations.length} accommodations linked to service level ${id}.`);
 
     if (linkedAccommodations.length > 0) {
       return res.status(400).json({ 
-        message: `Cannot delete service level with id ${id} because it is linked to ${linkedAccommodations.length} accommodation(s).`,
+        message: `Cannot delete service level because it is linked to ${linkedAccommodations.length} accommodation(s).`,
         details: {
           actionRequired: "Please delete or unlink these accommodations first.",
           linkedAccommodations
@@ -80,7 +79,7 @@ router.delete('/delete-service-level', async (req, res) => {
     });
 
     return res.json({ 
-      message: `Service level with id ${id} successfully deleted`,
+      message: `Service level successfully deleted`,
       serviceLevel: deleted,
     });
 
